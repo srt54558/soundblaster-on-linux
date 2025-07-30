@@ -146,6 +146,8 @@ Since the host's audio is now separate from the guest's, you need a way to route
        ```
     2. rename it to `start_audio_reciever.bat`
     3. press Win+R and run `shell:startup` and place the `start_audio_reciever.bat` inside the folder.
+   
+    **Important tips:** Based on your setting in the Soundblaster, you can change the bitrate to be 24 or 32 bit by changing the `s16le` and `pcm_s16le` from 16 to 24 or 32. For crystal clear audio!
 
 
 ## Thats it!! We got a PCIE soundblaster card to run on Linux and use its FULL potential!
