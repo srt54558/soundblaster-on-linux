@@ -149,5 +149,57 @@ Since the host's audio is now separate from the guest's, you need a way to route
    
     **Important tips:** Based on your setting in the Soundblaster, you can change the bitrate to be 24 or 32 bit by changing the `s16le` and `pcm_s16le` from 16 to 24 or 32. For crystal clear audio!
 
+    Currently i use 32bit 48000. I changed to s32le and pcm_s32le.
+    For this to work i tweaked my windows batch file to this:
+    `C:\ffmpeg\bin\ffplay.exe -analyzeduration 0 -probesize 32 -ch_layout stereo -f s32le -ar 48000 -nodisp -fflags nobuffer -flags low_delay -i udp://0.0.0.0:9999?buffer_size=131072&overrun_nonfatal=1`
 
+## Auto Start VM!
+
+  * 1. open your bashrc or zshrc: `nano ~/.zshrc` or `nano ~/.bashrc` based on what you use
+  * 2. paste this code at the end of the file:
+  ```
+vm-start() {
+  echo "✅ Starting VM 'win11-audio'..."
+  virsh --connect qemu:///system start vm-name
+
+  echo "⏳ Waiting 5 seconds for VM to boot before starting audio..."
+  sleep 5
+
+  audio-start
+}
+
+```
+* 3. Change `vm-name` to your actual VM name. To find the name out, run: `virsh --connect qemu:///system list --all`.
+  4. Save the file and exit
+  5. Run `source ~/.zshrc` to apply those changes. (may need to close and open terminal for it to really apply)
+ 
+    ### **Now when you run vm-start, the vm and audio start automatically!**
+
+  ## Auto Shutdown VM
+  To **safely** shutdown the VM when you shut down or reboot your pc, do this:
+  1. run `sudo nano /etc/systemd/system/safe-vm-shutdown.service `
+  2. paste this:
+ ```
+[Unit]
+Description=Safely shutdown Windows-Audio VM before host shutdown
+DefaultDependencies=no
+Before=shutdown.target reboot.target halt.target libvirtd.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/true
+ExecStop=/usr/bin/virsh shutdown vm-name
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target
+```
+* 3. Change `vm-name` to your actual VM name. To find the name out, run: `virsh --connect qemu:///system list --all`.
+  4. Save the file and exit
+  5. run `sudo systemctl enable safe-vm-shutdown.service`
+  6. run `sudo systemctl start safe-vm-shutdown.service`
+ 
+     That's it! Your shutdown or restart will take 1 minute longer, to give the VM room to shut down completely.
+     
 ## Thats it!! We got a PCIE soundblaster card to run on Linux and use its FULL potential!
