@@ -1,5 +1,9 @@
 # Guide: Sound Blaster Passthrough via VFIO on Debian
 
+## ⚠️ Disclaimer:
+>The steps described in this guide reflect what worked for me on my specific hardware and software setup. Your experience may vary depending on your system configuration.
+>I am not responsible for any damage, data loss, or malfunction resulting from following this guide. Proceed at your own risk. Make sure to back up important data before making any system changes.
+
 This guide provides a comprehensive walkthrough for passing through a Creative Labs Sound Blaster audio card to a Windows virtual machine on a Debian 12 host. This is necessary because native Linux drivers are often unavailable for these cards. The process involves overcoming IOMMU grouping issues by replacing the kernel and setting up network-based audio routing for a complete solution.
 
 -----
@@ -113,7 +117,7 @@ Since the host's audio is now separate from the guest's, you need a way to route
 
   * 1. open your bashrc or zshrc: `nano ~/.zshrc` or `nano ~/.bashrc` based on what you use
   * 2. paste this code at the end of the file:
-       `# Start streaming audio (runs only if not already running)
+  ```
   audio-start() {
     if pgrep -f "ffmpeg.*udp://192.168.122.2:9999" > /dev/null; then
       echo "⚠️  Audio stream is already running."
@@ -122,8 +126,6 @@ Since the host's audio is now separate from the guest's, you need a way to route
       nohup /usr/bin/ffmpeg -f pulse -i default -channel_layout stereo -acodec pcm_s16le -ar 48000 -ac 2 -f s16le udp://192.168.122.2:9999 >/dev/null 2>&1 &
     fi
   }
-
-  # Stop streaming audio
   audio-stop() {
     if pgrep -f "ffmpeg.*udp://192.168.122.2:9999" > /dev/null; then
       echo "⛔ Stopping audio stream..."
@@ -132,16 +134,16 @@ Since the host's audio is now separate from the guest's, you need a way to route
       echo "ℹ️ No audio stream running."
     fi
   }
-  `
+```
   * 3. Save the file and exit
     4. Run `source ~/.zshrc` to apply those changes. (may need to close and open terminal for it to really apply)
    
     ### In windows
     1. create a text file, and type the following content inside:
-       `
+       ```
        @echo off
        C:\ffmpeg\bin\ffplay.exe -ch_layout stereo -f s16le -ar 48000 -nodisp -fflags nobuffer -flags low_delay -i udp://0.0.0.0:9999
-       `
+       ```
     2. rename it to `start_audio_reciever.bat`
     3. press Win+R and run `shell:startup` and place the `start_audio_reciever.bat` inside the folder.
 
