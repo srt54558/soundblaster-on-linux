@@ -118,14 +118,23 @@ Since the host's audio is now separate from the guest's, you need a way to route
   * 1. open your bashrc or zshrc: `nano ~/.zshrc` or `nano ~/.bashrc` based on what you use
   * 2. paste this code at the end of the file:
   ```
-  audio-start() {
-    if pgrep -f "ffmpeg.*udp://192.168.122.2:9999" > /dev/null; then
-      echo "⚠️  Audio stream is already running."
-    else
-      echo "✅ Starting audio stream..."
-      nohup /usr/bin/ffmpeg -f pulse -i default -channel_layout stereo -acodec pcm_s16le -ar 48000 -ac 2 -f s16le udp://192.168.122.2:9999 >/dev/null 2>&1 &
-    fi
-  }
+audio-start() {
+  # Check if the Dummy384 sink already exists before creating it
+  if ! pw-cli ls Node | grep -q 'node.name = "Soundblaster"'; then
+    echo "✨ Creating Soundblaster audio sink..."
+    pw-cli create-node adapter \
+      "{ factory.name=support.null-audio-sink media.class=Audio/Sink object.linger=true node.name=Soundblaster audio.rate=384000 audio.format=F32LE audio.channels=2 }"
+  else
+    echo "ℹ️ Dummy384 audio sink already exists."
+  fi
+  if pgrep -f "ffmpeg.*udp://192.168.122.2:9999" > /dev/null; then
+    echo "⚠️  Audio stream is already running."
+  else
+    echo "✅ Starting audio stream..."
+    nohup pw-cat --record --target SoundBlaster.monitor --format f32 --rate 384000 - | /usr/bin/ffmpeg -f f32le -ar 384000 -ac 2 -i - -acodec pcm_f32le -f f32le udp://192.168.122.2:9999 &> /dev/null &
+  fi
+}
+
   audio-stop() {
     if pgrep -f "ffmpeg.*udp://192.168.122.2:9999" > /dev/null; then
       echo "⛔ Stopping audio stream..."
@@ -142,7 +151,7 @@ Since the host's audio is now separate from the guest's, you need a way to route
     1. create a text file, and type the following content inside:
        ```
        @echo off
-       C:\ffmpeg\bin\ffplay.exe -ch_layout stereo -f s16le -ar 48000 -nodisp -fflags nobuffer -flags low_delay -i udp://0.0.0.0:9999
+       C:\ffmpeg\bin\ffplay.exe -ch_layout stereo -f f32le -ar 384000 -nodisp -fflags nobuffer -flags low_delay -i udp://0.0.0.0:9999?buffer_size=131072%overrun_nonfatal=1
        ```
     2. rename it to `start_audio_reciever.bat`
     3. press Win+R and run `shell:startup` and place the `start_audio_reciever.bat` inside the folder.
