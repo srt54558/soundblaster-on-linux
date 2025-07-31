@@ -177,29 +177,12 @@ vm-start() {
 
   ## Auto Shutdown VM
   To **safely** shutdown the VM when you shut down or reboot your pc, do this:
-  1. run `sudo nano /etc/systemd/system/safe-vm-shutdown.service `
-  2. paste this:
- ```
-[Unit]
-Description=Safely shutdown Windows-Audio VM before host shutdown
-DefaultDependencies=no
-Before=shutdown.target reboot.target halt.target libvirtd.service
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStart=/bin/true
-ExecStop=/usr/bin/virsh shutdown vm-name
-TimeoutStopSec=60
-
-[Install]
-WantedBy=multi-user.target
-```
-* 3. Change `vm-name` to your actual VM name. To find the name out, run: `virsh --connect qemu:///system list --all`.
-  4. Save the file and exit
-  5. run `sudo systemctl enable safe-vm-shutdown.service`
-  6. run `sudo systemctl start safe-vm-shutdown.service`
+  1. run `sudo nano /etc/default/libvirt-guests`
+  2. uncomment the lines `ON_SHUTDOWN=shutdown` (and make sure it says "shutdown") and `SHUTDOWN_TIMEOUT=30` (i think 30 is a good timeout).
+  3. Save the file and exit
+  4. run `sudo systemctl enable libvirt-guests.service`
+  5. run `sudo systemctl restart libvirt-guests.service`
  
-     That's it! Your shutdown or restart will take 1 minute longer, to give the VM room to shut down completely.
+     That's it! Now your windows guest will shutdown safely with your host.
      
 ## Thats it!! We got a PCIE soundblaster card to run on Linux and use its FULL potential!
