@@ -6,6 +6,11 @@
 
 This guide provides a comprehensive walkthrough for passing through a Creative Labs Sound Blaster audio card to a Windows virtual machine on a Debian 12 host. This is necessary because native Linux drivers are often unavailable for these cards. The process involves overcoming IOMMU grouping issues by replacing the kernel and setting up network-based audio routing for a complete solution.
 
+## Missing functions:
+ * No microphone input yet
+
+## Latency?
+> i get about 100ms latency. you cant feel it unless you really look closely at lips or at syncing tests.
 -----
 
 ## 1\. Initial System & Hardware Preparation
@@ -22,11 +27,11 @@ Before starting, you must enable virtualization and IOMMU support in your system
 ## IF YOUR BIOS DOES NOT HAVE THEM BOTH, DO NOT PROCEED
 -----
 
-## 3\. The IOMMU Grouping Problem & Solution
+## 2\. The IOMMU Grouping Problem & Solution
 
 The most significant hurdle is often poor IOMMU grouping by the motherboard's firmware, which can prevent device passthrough.
 
-### 3.2. Failed Initial Attempt
+### Failed Initial Attempt
 
   * **Action**: A common first step is to add the `pcie_acs_override=downstream,multifunction` parameter to the `GRUB_CMDLINE_LINUX_DEFAULT` line in `/etc/default/grub`, followed by `sudo update-grub`.
   * To find your pci ID, run this command:
@@ -40,7 +45,7 @@ The most significant hurdle is often poor IOMMU grouping by the motherboard's fi
 
 
 
-### 3 The Grouping issue
+## 3 The Grouping issue continues?
 
 First run this command to check if you have this issue:
 `for g in $(find /sys/kernel/iommu_groups/* -maxdepth 0 -type d); do echo "IOMMU Group ${g##*/}:"; for d in $g/devices/*; do echo -e "\t$(lspci -nns ${d##*/})"; done; done`
@@ -62,7 +67,7 @@ and make sure the creative card is in a seperate group (in some cases there is a
 
 If this is true, we are done with the hardest part! Nice!
 
-## 6\. VM Creation and Optimization
+## 4\. VM Creation and Optimization
 
 I recommend the Tiny11 iso 24H2 to save on system resources:
 `https://archive.org/details/tiny-11-24-h-2-x-64-26100.1742`
@@ -95,7 +100,7 @@ Create a minimal and efficient Windows 11 VM using `virt-manager`.
 
 -----
 
-## 7\. Host-to-Guest Lossless Audio Routing
+## 5\. Host-to-Guest Lossless Audio Routing
 
 Since the host's audio is now separate from the guest's, you need a way to route it. This method uses a high-quality network stream, which is ideal if you lack a physical S/PDIF loopback.
 
@@ -104,7 +109,7 @@ Since the host's audio is now separate from the guest's, you need a way to route
 
     If not, follow this:
 
-  ### 7.1. Host Setup (PipeWire RTP Sink)
+  ### Host Setup (PipeWire RTP Sink)
 
   **IMPORTANT**: You need ffmpeg on both Host and VM.
   On your linux host run: `sudo apt install ffmpeg`
@@ -119,21 +124,21 @@ Since the host's audio is now separate from the guest's, you need a way to route
   * 2. paste this code at the end of the file:
   ```
 audio-start() {
-  # Check if the Dummy384 sink already exists before creating it
-  if ! pw-cli ls Node | grep -q 'node.name = "Soundblaster"'; then
-    echo "✨ Creating Soundblaster audio sink..."
+  if ! pw-cli ls Node | grep -q 'node.name = "SoundBlaster"'; then
+    echo "✨ Creating SoundBlaster audio sink..."
     pw-cli create-node adapter \
-      "{ factory.name=support.null-audio-sink media.class=Audio/Sink object.linger=true node.name=Soundblaster audio.rate=384000 audio.format=F32LE audio.channels=2 }"
+      "{ factory.name=support.null-audio-sink media.class=Audio/Sink object.linger=true node.name=SoundBlaster audio.rate=48000 audio.format=F16LE audio.channels=2 }"
   else
-    echo "ℹ️ Dummy384 audio sink already exists."
+    echo "ℹ️ SoundBlaster audio sink already exists."
   fi
   if pgrep -f "ffmpeg.*udp://192.168.122.2:9999" > /dev/null; then
     echo "⚠️  Audio stream is already running."
   else
     echo "✅ Starting audio stream..."
-    nohup pw-cat --record --target SoundBlaster.monitor --format f32 --rate 384000 - | /usr/bin/ffmpeg -f f32le -ar 384000 -ac 2 -i - -acodec pcm_f32le -f f32le udp://192.168.122.2:9999 &> /dev/null &
+    nohup pw-cat --record --target SoundBlaster.monitor --format f16 --rate 48000 - | /usr/bin/ffmpeg -f f16le -ar 48000 -ac 2 -i - -acodec pcm_f16le -f f16le udp://192.168.122.2:9999 &> /dev/null &
   fi
 }
+
 
   audio-stop() {
     if pgrep -f "ffmpeg.*udp://192.168.122.2:9999" > /dev/null; then
@@ -151,12 +156,12 @@ audio-start() {
     1. create a text file, and type the following content inside:
        ```
        @echo off
-       C:\ffmpeg\bin\ffplay.exe -ch_layout stereo -f f32le -ar 384000 -nodisp -fflags nobuffer -flags low_delay -i udp://0.0.0.0:9999?buffer_size=131072%overrun_nonfatal=1
+       C:\ffmpeg\bin\ffplay.exe -ch_layout stereo -f f16le -ar 48000 -nodisp -fflags nobuffer -flags low_delay -i udp://0.0.0.0:9999?buffer_size=131072&overrun_nonfatal=1
        ```
     2. rename it to `start_audio_reciever.bat`
     3. press Win+R and run `shell:startup` and place the `start_audio_reciever.bat` inside the folder.
    
-    **Important tips:** Based on your setting in the Soundblaster, you can change the bitrate to be 24 or 32 bit by changing the `s16le` and `pcm_s16le` from 16 to 24 or 32. For crystal clear audio!
+    **Important tips:** Based on your setting in the Soundblaster, you can change the bitrate to be 24 or 32 bit by changing the `f16le` and `pcm_f16le` from 16 to 24 or 32. For crystal clear audio! Same with the 48000 hz, just change to anything you       need. Note that these changes have to apply to ALL files and lines containing these string, so go thru all slowly!
 
     Currently i use 32bit 48000. I changed to s32le and pcm_s32le.
     For this to work i tweaked my windows batch file to this:
