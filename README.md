@@ -156,7 +156,7 @@ audio-start() {
     1. create a text file, and type the following content inside:
        ```
        @echo off
-       C:\ffmpeg\bin\ffplay.exe -ch_layout stereo -f f16le -ar 48000 -nodisp -fflags nobuffer -flags low_delay -i udp://0.0.0.0:9999?buffer_size=131072&overrun_nonfatal=1
+       C:\ffmpeg\bin\ffplay.exe -ch_layout stereo -f f16le -ar 48000 -nodisp -fflags nobuffer -flags low_delay -i udp://0.0.0.0:9999?buffer_size=131072%overrun_nonfatal=1
        ```
     2. rename it to `start_audio_reciever.bat`
     3. press Win+R and run `shell:startup` and place the `start_audio_reciever.bat` inside the folder.
