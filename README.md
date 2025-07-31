@@ -1,4 +1,6 @@
 # Guide: Sound Blaster Passthrough via VFIO on Debian
+<img src="screenshot1.png" alt="Description of the image" width="50%">
+<img src="screenshot2.png" alt="Description of the image" width="50%">
 
 ## ⚠️ Disclaimer:
 >The steps described in this guide reflect what worked for me on my specific hardware and software setup. Your experience may vary depending on your system configuration.
@@ -8,10 +10,16 @@ This guide provides a comprehensive walkthrough for passing through a Creative L
 
 ## Missing functions:
  * No microphone input yet
+ * No automatic startup yet (but simple to do manually)
 
 ## Latency?
 > i get about 100ms latency. you cant feel it unless you really look closely at lips or at syncing tests.
 -----
+
+## 0\. Prerequisites
+ * You must know AT LEAST basic linux commands
+ * You must be confident with doing these steps
+
 
 ## 1\. Initial System & Hardware Preparation
 
