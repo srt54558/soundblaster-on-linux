@@ -169,11 +169,9 @@ audio-start() {
     2. rename it to `start_audio_reciever.bat`
     3. press Win+R and run `shell:startup` and place the `start_audio_reciever.bat` inside the folder.
    
-    **Important tips:** Based on your setting in the Soundblaster, you can change the bitrate to be 24 or 32 bit by changing the `f16le` and `pcm_f16le` from 16 to 24 or 32. For crystal clear audio! Same with the 48000 hz, just change to anything you       need. Note that these changes have to apply to ALL files and lines containing these string, so go thru all slowly!
+    **Important tips:** Based on your setting in the Soundblaster, you can change the bitrate to be 24 or 32 bit by changing the `f16le` and `pcm_f16le` from 16 to 24 or 32. For crystal clear audio! Same with the 48000, just change to anything you       need. Note that these changes have to apply to ALL files and lines containing these string, so go thru all slowly!
 
-    Currently i use 32bit 48000. I changed to s32le and pcm_s32le.
-    For this to work i tweaked my windows batch file to this:
-    `C:\ffmpeg\bin\ffplay.exe -analyzeduration 0 -probesize 32 -ch_layout stereo -f s32le -ar 48000 -nodisp -fflags nobuffer -flags low_delay -i udp://0.0.0.0:9999?buffer_size=131072&overrun_nonfatal=1`
+    Currently i use 32bit 384000.
 
 ## Auto Start VM!
 
@@ -190,12 +188,22 @@ vm-start() {
   audio-start
 }
 
+vm-stop() {
+  echo "✅ Stopping audio..."
+  audio-stop
+
+  echo "✅ Shutting down VM 'win11-audio'..."
+  virsh --connect qemu:///system shutdown win11-audio
+}
+
+
 ```
 * 3. Change `vm-name` to your actual VM name. To find the name out, run: `virsh --connect qemu:///system list --all`.
   4. Save the file and exit
   5. Run `source ~/.zshrc` to apply those changes. (may need to close and open terminal for it to really apply)
  
     ### **Now when you run vm-start, the vm and audio start automatically!**
+  (or vm-stop to stop the VM and audio stream...)
 
   ## Auto Shutdown VM
   To **safely** shutdown the VM when you shut down or reboot your pc, do this:
