@@ -9,7 +9,7 @@
 This guide provides a comprehensive walkthrough for passing through a Creative Labs Sound Blaster audio card to a Windows virtual machine on a Debian 12 host. This is necessary because native Linux drivers are often unavailable for these cards. The process involves overcoming IOMMU grouping issues by replacing the kernel and setting up network-based audio routing for a complete solution.
 
 ## Missing functions:
- * No microphone input yet
+ * No Inputs yet passed to the Linux
  * No automatic startup yet (but simple to do manually)
 
 ## Latency?
